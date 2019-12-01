@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>YouBike</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        border: 0 none;
+        /* line-height: 0; */
+        min-width: 100vw;
+        min-height: 100vh;
+      }
+
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/bulma/css/bulma.min.css">
+    <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+  </head>
+
+  <body>
+    <div id="app">
+      <div class="select" v-on:change="fetchBikes">
+        <select v-model="city">
+          <option v-for="city of options.cities" v-bind:value="city.code">{{ city.name }}</option>
+        </select>
+      </div>
+      <div>
+        <table class="table">
+          <thead>
+            <th>ID</th>
+            <th>名稱</th>
+            <th>地圖</th>
+            <th>營運</th>
+            <th>可借/可還/總數</th>
+          </thead>
+          <tbody>
+            <tr v-for="station of stations">
+              <td>{{ station.station_no }}</td>
+              <td>{{ station.name_tw }}</td>
+              <td><a v-bind:href="`https://www.google.com/maps/search/?api=1&query=${station.lat},${station.lng}`">Google</a></td>
+              <td>{{ station.status === 1 }}</td>
+              <td>{{ station.available_spaces }}/{{ station.empty_spaces }}/{{ station.parking_spaces }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <script>
+      (() => {
+        new Vue({
+          el: '#app',
+          data: {
+            options: {
+              cities: [
+                { name: '新竹市', code: '09' }
+              ]
+            },
+            city: '',
+            stations: [],
+            refresh: null
+          },
+          methods: {
+            async fetchBikes() {
+              clearTimeout(this.refresh)
+              this.refresh = setTimeout(this.fetchBikes, 300000)
+              const data = await (await fetch(`https://apis.youbike.com.tw/api/front/station/all?lang=tw&type=1&_=${Date.now()}`)).json()
+              this.stations = data.retVal.filter(station => station.area_code === this.city)
+            }
+          }
+        })
+      })()
+    </script>
+  </body>
+
+</html>
