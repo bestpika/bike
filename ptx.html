@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>PTX Bike</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        border: 0 none;
+        /* line-height: 0; */
+        min-width: 100vw;
+        min-height: 100vh;
+      }
+
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/bulma/css/bulma.min.css">
+    <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+  </head>
+
+  <body>
+    <div id="app">
+      <div class="select" v-on:change="fetchBikes">
+        <select v-model="city">
+          <option v-for="city of options.cities" v-bind:value="city.code">{{ city.name }}</option>
+        </select>
+      </div>
+      <div>
+        <table class="table">
+          <thead>
+            <th>ID</th>
+            <th>名稱</th>
+            <th>地圖</th>
+            <th>營運</th>
+            <th>可借/可還/總數</th>
+          </thead>
+          <tbody>
+            <tr v-for="station of stations">
+              <td>{{ station.StationID }}</td>
+              <td>{{ station.StationName.Zh_tw }}</td>
+              <td><a v-bind:href="`https://www.google.com/maps/search/?api=1&query=${station.StationPosition.PositionLat},${station.StationPosition.PositionLon}`">Google</a></td>
+              <td>{{ station.service }}</td>
+              <td>{{ station.rent[0] }}/{{ station.rent[1] }}/{{ station.BikesCapacity }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <script>
+      (() => {
+        new Vue({
+          el: '#app',
+          data: {
+            options: {
+              cities: [
+                { name: '新竹市', code: 'Hsinchu' }
+              ]
+            },
+            city: '',
+            stations: [],
+            refresh: null
+          },
+          methods: {
+            async fetchBikes() {
+              clearTimeout(this.refresh)
+              this.refresh = setTimeout(this.fetchBikes, 300000)
+              const stations = await (await fetch(`https://ptx.transportdata.tw/MOTC/v2/Bike/Station/${this.city}?$format=JSON$${Date.now()}`)).json()
+              const bikes = await (await fetch(`https://ptx.transportdata.tw/MOTC/v2/Bike/Availability/${this.city}?$format=JSON$${Date.now()}`)).json()
+              for (const bike of bikes) {
+                const id = bike.StationID
+                const service = bike.ServieAvailable === 1
+                const rent = [bike.AvailableRentBikes, bike.AvailableReturnBikes]
+                for (const station of stations) {
+                  if (station.StationID === id) {
+                    station.service = service
+                    station.rent = rent
+                  }
+                }
+              }
+              this.stations = stations
+            }
+          }
+        })
+      })()
+    </script>
+  </body>
+
+</html>
